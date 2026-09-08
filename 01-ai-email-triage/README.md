@@ -49,6 +49,8 @@ The workflow then processes the AI response and checks the urgency level. If the
 
 ## Workflow Architecture
 
+![AI Email Triage n8n Workflow](#1 AI Email Triage.png)
+
 Incoming Outlook Email  
 ↓  
 Extract Email Content  
