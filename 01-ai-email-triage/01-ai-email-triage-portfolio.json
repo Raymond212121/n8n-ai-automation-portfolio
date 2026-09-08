@@ -1,0 +1,224 @@
+{
+  "name": "AI Email Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are an office email assistant.\n\nRead the email below.\n\nReturn ONLY valid JSON in exactly this structure:\n\n{\n  \"type\": \"Customer Request | Admin | Marketing | Newsletter | Security | Other\",\n  \"summary\": \"1-2 sentence summary\",\n  \"customer_wants\": \"What the sender is asking for, or Nothing\",\n  \"action_needed\": true,\n  \"urgency\": \"Low | Medium | High\",\n  \"draft_reply\": \"Professional reply if needed, otherwise No reply needed\"\n}\n\nDo not include any explanation outside the JSON.\n\nEMAIL:\n{{ $json.email }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        272,
+        368
+      ],
+      "id": "4876c6dd-0ea1-4961-bbe7-72e0788318b2",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "OpenAI API account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "776f2e96-b439-4f36-bfac-102c9959c3ad",
+              "name": "email",
+              "value": "={{ $json.bodyPreview }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        112,
+        368
+      ],
+      "id": "e541eb11-833d-4382-b43e-90bacef362f3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        368
+      ],
+      "id": "12457944-ba13-4591-a097-08219cf4e883",
+      "name": "Microsoft Outlook Trigger",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7053a21e-ffb0-4b74-a9bd-349b3c6265b6",
+              "leftValue": "={{ $json.urgency }}",
+              "rightValue": "High",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        368
+      ],
+      "id": "b6f5eb09-a58c-4f46-9d85-eb885a1b66af",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiText = $input.first().json.output[0].content[0].text;\n\nconst parsed = JSON.parse(aiText);\n\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        368
+      ],
+      "id": "6b595124-d30b-499d-a8b5-80e1ea5025e4",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "toRecipients": "your-email@example.com",
+        "subject": "URGENT EMAIL ALERT",
+        "bodyContent": "A high-urgency email has been detected. Check your inbox.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        896,
+        368
+      ],
+      "id": "507b3e59-cb5d-467d-8b46-13fd9924c0c0",
+      "name": "Send a message",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Microsoft Outlook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}
